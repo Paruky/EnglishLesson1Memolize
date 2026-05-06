@@ -2,51 +2,52 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>英単語暗記（ガチモード）</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #1e1e2f;
       color: white;
       text-align: center;
-      padding: 50px;
+      padding: 20px;
     }
 
     .card {
       background: #2c2c44;
-      padding: 30px;
+      padding: 20px;
       border-radius: 15px;
-      width: 360px;
+      width: 100%;
+      max-width: 400px;
       margin: auto;
       box-shadow: 0 0 15px rgba(0,0,0,0.5);
     }
 
     h1 {
-      font-size: 26px;
+      font-size: 24px;
+      word-break: break-word;
     }
 
     input {
       margin-top: 15px;
-      padding: 10px;
-      width: 80%;
-      border-radius: 8px;
+      padding: 14px;
+      width: 90%;
+      border-radius: 10px;
       border: none;
       font-size: 16px;
     }
 
     button {
       margin-top: 10px;
-      padding: 10px 20px;
+      padding: 12px;
+      width: 90%;
       border: none;
       border-radius: 10px;
       background: #00ffaa;
       color: black;
       font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #00cc88;
+      font-size: 16px;
     }
 
     .result {
@@ -59,20 +60,20 @@
     .wrong { color: #ff5555; }
 
     .mode {
-      margin-top: 15px;
+      margin-top: 10px;
       font-size: 14px;
       opacity: 0.8;
     }
   </style>
 </head>
+
 <body>
 
   <div class="card">
-    <h1 id="word"></h1>
+    <h1 id="question"></h1>
 
-    <input type="text" id="answer" placeholder="日本語を入力">
+    <input type="text" id="answer" placeholder="答えを入力">
 
-    <br>
     <button onclick="checkAnswer()">答える</button>
     <button onclick="nextWord()">次へ</button>
     <button onclick="reviewMode()">復習モード</button>
@@ -112,41 +113,49 @@
     ];
 
     let wrongWords = [];
-    let current = 0;
+    let current;
     let isReview = false;
+    let isEnglishToJapanese = true;
 
-    function getCurrentList() {
+    function getList() {
       return isReview && wrongWords.length > 0 ? wrongWords : words;
     }
 
     function nextWord() {
-      const list = getCurrentList();
-      current = Math.floor(Math.random() * list.length);
+      const list = getList();
+      current = list[Math.floor(Math.random() * list.length)];
 
-      document.getElementById("word").textContent = list[current].en;
+      // 出題方向ランダム
+      isEnglishToJapanese = Math.random() < 0.5;
+
+      if (isEnglishToJapanese) {
+        document.getElementById("question").textContent = current.en;
+      } else {
+        document.getElementById("question").textContent = current.ja;
+      }
+
       document.getElementById("answer").value = "";
       document.getElementById("result").textContent = "";
     }
 
     function checkAnswer() {
-      const list = getCurrentList();
       const input = document.getElementById("answer").value.trim();
-      const correct = list[current].ja;
 
-      if (correct.includes(input) && input !== "") {
+      let correctAnswer = isEnglishToJapanese ? current.ja : current.en;
+
+      if (correctAnswer.includes(input) && input !== "") {
         document.getElementById("result").textContent = "正解！";
         document.getElementById("result").className = "result correct";
 
-        // 正解したら復習リストから削除
-        wrongWords = wrongWords.filter(w => w.en !== list[current].en);
+        wrongWords = wrongWords.filter(w => w.en !== current.en);
 
       } else {
-        document.getElementById("result").textContent = "不正解… 正解: " + correct;
+        document.getElementById("result").textContent =
+          "不正解… 正解: " + correctAnswer;
         document.getElementById("result").className = "result wrong";
 
-        // 間違えたら追加（重複防止）
-        if (!wrongWords.some(w => w.en === list[current].en)) {
-          wrongWords.push(list[current]);
+        if (!wrongWords.some(w => w.en === current.en)) {
+          wrongWords.push(current);
         }
       }
     }
@@ -157,12 +166,12 @@
         return;
       }
       isReview = true;
-      document.getElementById("mode").textContent = "復習モード（間違えた単語のみ）";
+      document.getElementById("mode").textContent = "復習モード（ミスのみ）";
       nextWord();
     }
 
-    // Enterキーで回答
-    document.getElementById("answer").addEventListener("keypre」」ss", function(e) {
+    // Enter対応（修正済み）
+    document.getElementById("answer").addEventListener("keypress", function(e) {
       if (e.key === "Enter") {
         checkAnswer();
       }
