@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>英単語暗記（ガチモード）</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e2f;
+      color: white;
+      text-align: center;
+      padding: 50px;
+    }
+
+    .card {
+      background: #2c2c44;
+      padding: 30px;
+      border-radius: 15px;
+      width: 360px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      font-size: 26px;
+    }
+
+    input {
+      margin-top: 15px;
+      padding: 10px;
+      width: 80%;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #00ffaa;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #00cc88;
+    }
+
+    .result {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .correct { color: #00ffaa; }
+    .wrong { color: #ff5555; }
+
+    .mode {
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1 id="word"></h1>
+
+    <input type="text" id="answer" placeholder="日本語を入力">
+
+    <br>
+    <button onclick="checkAnswer()">答える</button>
+    <button onclick="nextWord()">次へ</button>
+    <button onclick="reviewMode()">復習モード</button>
+
+    <div id="result" class="result"></div>
+    <div id="mode" class="mode">通常モード</div>
+  </div>
+
+  <script>
+    const words = [
+      { en: "twice", ja: "2回、2倍" },
+      { en: "post", ja: "投稿する" },
+      { en: "media", ja: "媒体、メディア" },
+      { en: "social media", ja: "SNS" },
+      { en: "blog", ja: "ブログ" },
+      { en: "come up with", ja: "思いつく、考え出す" },
+      { en: "workshop", ja: "講習会、作業場" },
+      { en: "attract", ja: "引きつける" },
+      { en: "clip", ja: "切り抜き、クリップする" },
+      { en: "edit", ja: "編集する" },
+      { en: "hobby", ja: "趣味" },
+      { en: "anybody", ja: "誰でも" },
+      { en: "beginner", ja: "初心者" },
+      { en: "close", ja: "閉じる、近い" },
+      { en: "wind", ja: "風" },
+      { en: "awesome", ja: "すごい、最高" },
+      { en: "rap", ja: "ラップ" },
+      { en: "bound", ja: "〜行きの、縛られた" },
+      { en: "option", ja: "選択肢" },
+      { en: "entire", ja: "全体の" },
+      { en: "hurry", ja: "急ぐ" },
+      { en: "crowded", ja: "混雑した" },
+      { en: "apologize", ja: "謝る" },
+      { en: "temporarily", ja: "一時的に" },
+      { en: "estimate", ja: "見積もる、推定する" },
+      { en: "later", ja: "後で" }
+    ];
+
+    let wrongWords = [];
+    let current = 0;
+    let isReview = false;
+
+    function getCurrentList() {
+      return isReview && wrongWords.length > 0 ? wrongWords : words;
+    }
+
+    function nextWord() {
+      const list = getCurrentList();
+      current = Math.floor(Math.random() * list.length);
+
+      document.getElementById("word").textContent = list[current].en;
+      document.getElementById("answer").value = "";
+      document.getElementById("result").textContent = "";
+    }
+
+    function checkAnswer() {
+      const list = getCurrentList();
+      const input = document.getElementById("answer").value.trim();
+      const correct = list[current].ja;
+
+      if (correct.includes(input) && input !== "") {
+        document.getElementById("result").textContent = "正解！";
+        document.getElementById("result").className = "result correct";
+
+        // 正解したら復習リストから削除
+        wrongWords = wrongWords.filter(w => w.en !== list[current].en);
+
+      } else {
+        document.getElementById("result").textContent = "不正解… 正解: " + correct;
+        document.getElementById("result").className = "result wrong";
+
+        // 間違えたら追加（重複防止）
+        if (!wrongWords.some(w => w.en === list[current].en)) {
+          wrongWords.push(list[current]);
+        }
+      }
+    }
+
+    function reviewMode() {
+      if (wrongWords.length === 0) {
+        alert("まだ間違えた単語がない！");
+        return;
+      }
+      isReview = true;
+      document.getElementById("mode").textContent = "復習モード（間違えた単語のみ）";
+      nextWord();
+    }
+
+    // Enterキーで回答
+    document.getElementById("answer").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        checkAnswer();
+      }
+    });
+
+    nextWord();
+  </script>
+
+</body>
+</html>
