@@ -4,95 +4,291 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>英単語暗記（完成版）</title>
+<title>Lesson1 英語暗記</title>
 
 <style>
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #10131a;
+  --panel: #1d2430;
+  --panel-strong: #273241;
+  --text: #f7fbff;
+  --muted: #aeb9c6;
+  --accent: #31d39a;
+  --accent-strong: #13b77e;
+  --danger: #ff6b7a;
+  --line: rgba(255,255,255,0.12);
+  --shadow: 0 18px 46px rgba(0,0,0,0.28);
+}
+
+html {
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: Arial;
-  background: #1e1e2f;
-  color: white;
-  text-align: center;
-  padding: 20px;
+  min-height: 100svh;
+  margin: 0;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  display: grid;
+  place-items: start center;
+  background:
+    radial-gradient(circle at top left, rgba(49,211,154,0.16), transparent 34rem),
+    linear-gradient(135deg, #10131a 0%, #182030 48%, #0f1720 100%);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app {
+  width: min(100%, 520px);
+  margin-block: min(6vh, 36px);
 }
 
 .card {
-  background: #2c2c44;
-  padding: 20px;
-  border-radius: 15px;
-  max-width: 400px;
-  margin: auto;
+  width: 100%;
+  padding: clamp(18px, 5vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(29,36,48,0.94);
+  box-shadow: var(--shadow);
 }
 
-input {
-  margin-top: 15px;
-  padding: 12px;
-  width: 90%;
-  border-radius: 10px;
-  border: none;
+.app-title {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 7vw, 34px);
+  line-height: 1.15;
+  letter-spacing: 0;
 }
 
-button, select {
-  margin-top: 8px;
-  padding: 12px;
-  width: 90%;
-  border-radius: 10px;
-  border: none;
+.question-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
 }
 
-button { background: #00ffaa; }
+#question {
+  min-height: 3.4em;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  overflow-wrap: anywhere;
+  padding: 18px 14px;
+  border-radius: 8px;
+  background: var(--panel-strong);
+  font-size: clamp(26px, 9vw, 42px);
+  line-height: 1.2;
+  letter-spacing: 0;
+}
 
-.result { margin-top: 10px; font-weight: bold; }
-.correct { color: #00ffaa; }
-.wrong { color: #ff5555; }
-
-.small { font-size: 14px; margin-top: 5px; }
-
-/* 👇ゲージ */
 .bar {
-  width: 90%;
-  height: 10px;
-  background: #444;
-  margin: 10px auto;
-  border-radius: 10px;
+  width: 100%;
+  height: 12px;
+  background: rgba(255,255,255,0.12);
+  margin: 16px 0 8px;
+  border-radius: 999px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
   width: 0%;
-  background: #00ffaa;
-  transition: 0.3s;
+  background: linear-gradient(90deg, var(--accent), #79e2ff);
+  transition: width 0.25s ease;
+}
+
+.small {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.answer-area {
+  margin-top: 18px;
+  text-align: left;
+}
+
+.answer-area label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+input, button, select {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font: inherit;
+}
+
+input, select {
+  background: #f8fbff;
+  color: #121822;
+}
+
+input {
+  padding: 13px 14px;
+  font-size: 18px;
+}
+
+input:focus, button:focus-visible, select:focus {
+  outline: 3px solid rgba(121,226,255,0.38);
+  outline-offset: 2px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.controls button:first-child {
+  grid-column: 1 / -1;
+}
+
+button {
+  padding: 12px 14px;
+  background: var(--accent);
+  color: #07130e;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button.secondary {
+  background: #d8e6f0;
+  color: #15202b;
+}
+
+button.danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: rgba(255,107,122,0.48);
+}
+
+.settings {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.settings label {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+select {
+  margin-top: 8px;
+  padding: 0 12px;
+}
+
+.result {
+  min-height: 2.8em;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.07);
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.result:empty {
+  display: none;
+}
+
+.correct {
+  color: var(--accent);
+}
+
+.wrong {
+  color: var(--danger);
+}
+
+#stats {
+  margin-top: 12px;
+}
+
+@media (max-width: 420px) {
+  body {
+    padding-inline: 12px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .app {
+    margin-block: 0;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  #question {
+    min-height: 3em;
+    padding-inline: 10px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h1 id="question"></h1>
+<main class="app">
+<section class="card" aria-label="英単語暗記アプリ">
+  <h1 class="app-title">Lesson1 英語暗記</h1>
+
+  <p class="question-label">問題</p>
+  <div id="question" role="heading" aria-level="2"></div>
 
   <div class="bar">
     <div id="barFill" class="bar-fill"></div>
   </div>
   <div id="masteryText" class="small"></div>
 
-  <input id="answer" placeholder="答えを入力">
+  <div class="answer-area">
+    <label for="answer">答え</label>
+    <input id="answer" placeholder="ここに入力" autocomplete="off" autocapitalize="none">
+  </div>
 
-  <button onclick="checkAnswer()">答える</button>
-  <button onclick="nextWord()">次へ</button>
-  <button onclick="reviewMode()">復習モード</button>
+  <div class="controls">
+    <button onclick="checkAnswer()">答える</button>
+    <button class="secondary" onclick="nextWord(true)">次へ</button>
+    <button class="secondary" onclick="reviewMode()">復習</button>
+  </div>
 
-  <select id="modeSelect" onchange="changeMode()">
-    <option value="mix">混合</option>
-    <option value="en">英→日</option>
-    <option value="ja">日→英</option>
-  </select>
+  <div class="settings">
+    <label for="modeSelect">出題モード
+      <select id="modeSelect" onchange="changeMode()">
+        <option value="mix">混合</option>
+        <option value="en">英語から日本語</option>
+        <option value="ja">日本語から英語</option>
+      </select>
+    </label>
 
-  <button onclick="resetMastery()">♻️習得リセット</button>
+    <button class="danger" onclick="resetMastery()">習得をリセット</button>
+  </div>
 
-  <div id="result" class="result"></div>
+  <div id="result" class="result" aria-live="polite"></div>
   <div id="stats" class="small"></div>
-</div>
+</section>
+</main>
 
 <script>
 const words = [
@@ -163,6 +359,12 @@ let mastery = JSON.parse(localStorage.getItem("mastery")) || {};
 let current;
 let mode = "mix";
 let isEnglishToJapanese;
+let reviewOnly = false;
+let answered = false;
+
+if("scrollRestoration" in history){
+  history.scrollRestoration = "manual";
+}
 
 // 保存
 function save(){
@@ -171,7 +373,11 @@ function save(){
 
 // 出題リスト（ここが重要🔥）
 function getList(){
-  return words.filter(w => (mastery[w.en] || 0) < 20);
+  const base = words.filter(w => (mastery[w.en] || 0) < 10);
+  if(!reviewOnly) return base;
+
+  const reviewList = base.filter(w => (mastery[w.en] || 0) < 3);
+  return reviewList.length ? reviewList : base;
 }
 
 // 出題方向
@@ -181,11 +387,15 @@ function getDir(){
   return false;
 }
 
-function nextWord(){
+function nextWord(focusAnswer = false){
   const list = getList();
 
   if(list.length === 0){
-    question.textContent = "🎉 全部習得！";
+    question.textContent = "全部習得！";
+    answer.value = "";
+    result.textContent = "すべての単語が習得済みです。";
+    result.className = "result correct";
+    updateStats();
     return;
   }
 
@@ -196,54 +406,102 @@ function nextWord(){
 
   answer.value = "";
   result.textContent = "";
+  answered = false;
 
   updateBar();
+  updateStats();
+  if(focusAnswer) answer.focus();
 }
 
 // 👇ゲージ更新
 function updateBar(){
+  if(!current) return;
   let val = mastery[current.en] || 0;
-  let percent = (val / 20) * 100;
+  let percent = (val / 10) * 100;
 
   barFill.style.width = percent + "%";
-  masteryText.textContent = `習得度: ${val}/20`;
+  masteryText.textContent = `習得度: ${val}/10`;
 }
 
 function checkAnswer(){
+  if(!current || answered) return;
+
   const input = answer.value.trim();
   const correct = isEnglishToJapanese ? current.ja : current.en;
+  const normalizedInput = normalize(input);
+  const acceptedAnswers = isEnglishToJapanese
+    ? current.ja.split(/[、,]/).map(normalize).filter(Boolean)
+    : [normalize(current.en)];
+  const isCorrect = isEnglishToJapanese
+    ? acceptedAnswers.some(item => item.includes(normalizedInput))
+    : acceptedAnswers.includes(normalizedInput);
 
-  if(correct.includes(input) && input !== ""){
+  if(normalizedInput && isCorrect){
     result.textContent = "正解！ 正答: " + correct;
     result.className = "result correct";
 
-    mastery[current.en] = (mastery[current.en] || 0) + 1;
+    mastery[current.en] = Math.min((mastery[current.en] || 0) + 1, 10);
 
   } else {
     result.textContent = "不正解… 正解: " + correct;
     result.className = "result wrong";
   }
 
+  answered = true;
   save();
   updateBar();
+  updateStats();
 }
 
 function changeMode(){
   mode = modeSelect.value;
+  nextWord();
+}
+
+function reviewMode(){
+  reviewOnly = !reviewOnly;
+  result.textContent = reviewOnly ? "復習モードにしました。" : "通常モードに戻しました。";
+  result.className = "result";
+  nextWord();
 }
 
 function resetMastery(){
   if(confirm("リセットする？")){
     mastery = {};
     save();
+    reviewOnly = false;
     nextWord();
   }
 }
 
-answer.addEventListener("keypress", e=>{
-  if(e.key==="Enter") checkAnswer();
+function updateStats(){
+  const learned = words.filter(w => (mastery[w.en] || 0) >= 10).length;
+  const left = words.length - learned;
+  const reviewText = reviewOnly ? " / 復習中" : "";
+  stats.textContent = `残り ${left}語 / 習得 ${learned}語${reviewText}`;
+}
+
+function normalize(value){
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+answer.addEventListener("keydown", e=>{
+  if(e.key === "Enter"){
+    if(answered) nextWord(true);
+    else checkAnswer();
+  }
 });
 
+function resetScroll(){
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+}
+
+window.addEventListener("pageshow", () => {
+  resetScroll();
+  setTimeout(resetScroll, 80);
+});
+
+resetScroll();
 nextWord();
 </script>
 
