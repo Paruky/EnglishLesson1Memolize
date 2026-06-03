@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英単語暗記（完全保存版）</title>
+
+<title>英単語暗記（完成版）</title>
 
 <style>
 body {
@@ -22,8 +23,6 @@ body {
   margin: auto;
 }
 
-h1 { font-size: 24px; }
-
 input {
   margin-top: 15px;
   padding: 12px;
@@ -38,7 +37,6 @@ button, select {
   width: 90%;
   border-radius: 10px;
   border: none;
-  font-weight: bold;
 }
 
 button { background: #00ffaa; }
@@ -47,8 +45,24 @@ button { background: #00ffaa; }
 .correct { color: #00ffaa; }
 .wrong { color: #ff5555; }
 
-.small { font-size: 14px; opacity: 0.8; margin-top: 5px; }
-.timer { font-size: 18px; margin-top: 10px; }
+.small { font-size: 14px; margin-top: 5px; }
+
+/* 👇ゲージ */
+.bar {
+  width: 90%;
+  height: 10px;
+  background: #444;
+  margin: 10px auto;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #00ffaa;
+  transition: 0.3s;
+}
 </style>
 </head>
 
@@ -56,7 +70,11 @@ button { background: #00ffaa; }
 
 <div class="card">
   <h1 id="question"></h1>
-  <div class="timer" id="timer"></div>
+
+  <div class="bar">
+    <div id="barFill" class="bar-fill"></div>
+  </div>
+  <div id="masteryText" class="small"></div>
 
   <input id="answer" placeholder="答えを入力">
 
@@ -66,16 +84,14 @@ button { background: #00ffaa; }
 
   <select id="modeSelect" onchange="changeMode()">
     <option value="mix">混合</option>
-    <option value="en">英語→日本語</option>
-    <option value="ja">日本語→英語</option>
+    <option value="en">英→日</option>
+    <option value="ja">日→英</option>
   </select>
 
-  <button onclick="toggleTimer()">⏱ タイマー切替</button>
+  <button onclick="resetMastery()">♻️習得リセット</button>
 
   <div id="result" class="result"></div>
-  <div class="small" id="mode">通常モード</div>
-  <div class="small" id="stats"></div>
-  <div class="small" id="weak"></div>
+  <div id="stats" class="small"></div>
 </div>
 
 <script>
@@ -105,170 +121,129 @@ const words = [
 { en:"apologize", ja:"謝る、お詫びする、謝罪する" },
 { en:"temporarily", ja:"一時的に" },
 { en:"estimate", ja:"見積もる、推定する、概算する" },
-{ en:"later", ja:"後で、後ほど" }
+{ en:"later", ja:"後で、後ほど" },
+{ en:"alone", ja:"ひとりで、ひとりの" },
+{ en:"true", ja:"本当の、真実の" },
+{ en:"playlist", ja:"再生リスト" },
+{ en:"summertime", ja:"夏季、夏の時期" },
+{ en:"those", ja:"それらの、それら" },
+{ en:"melody", ja:"メロディー、旋律" },
+{ en:"remind", ja:"思い出させる" },
+{ en:"rhythm", ja:"リズム" },
+{ en:"remind...of~", ja:"…に〜を思い出させる" },
+{ en:"debut", ja:"デビュー" },
+{ en:"title", ja:"題名、タイトル" },
+{ en:"complex", ja:"複雑な" },
+{ en:"impossible", ja:"不可能な" },
+{ en:"unhappy", ja:"不幸な、悲しい" },
+{ en:"word", ja:"言葉、単語" },
+{ en:"throughout", ja:"〜の間中、〜の至る所で" },
+{ en:"person", ja:"人" },
+{ en:"ask for", ja:"求める、頼む" },
+{ en:"contrast", ja:"対比、対照" },
+{ en:"concern", ja:"心配、懸念" },
+{ en:"afraid", ja:"恐れて、怖がって" },
+{ en:"passion", ja:"情熱" },
+{ en:"upbeat", ja:"陽気な、前向きな" },
+{ en:"roller", ja:"ローラー" },
+{ en:"coaster", ja:"コースター" },
+{ en:"roller coaster", ja:"ジェットコースター" },
+{ en:"close", ja:"近い、親しい、閉じる" },
+{ en:"daytime", ja:"昼間" },
+{ en:"double", ja:"2倍の、2重の" },
+{ en:"feel free to", ja:"気軽に〜してください" },
+{ en:"numbered", ja:"番号が付けられた" },
+{ en:"haunted", ja:"幽霊の出る" },
+{ en:"according", ja:"〜によれば、〜に従って" },
+{ en:"Ferris wheel", ja:"観覧車" },
+{ en:"app", ja:"アプリ" }
 ];
 
-// ===== データ =====
-let wrongWords = JSON.parse(localStorage.getItem("wrongWords")) || [];
-let mistakeCount = JSON.parse(localStorage.getItem("mistakeCount")) || {};
-let total = Number(localStorage.getItem("total")) || 0;
-let correctCount = Number(localStorage.getItem("correctCount")) || 0;
-let mode = localStorage.getItem("mode") || "mix";
-
+let mastery = JSON.parse(localStorage.getItem("mastery")) || {};
 let current;
-let isReview = false;
-
-let timerOn = JSON.parse(localStorage.getItem("timerOn")) || false;
-let timeLeft = 10;
-let timerInterval;
-
-// ===== 保存 =====
-function saveData() {
-  localStorage.setItem("wrongWords", JSON.stringify(wrongWords));
-  localStorage.setItem("mistakeCount", JSON.stringify(mistakeCount));
-  localStorage.setItem("total", total);
-  localStorage.setItem("correctCount", correctCount);
-  localStorage.setItem("mode", mode);
-  localStorage.setItem("timerOn", timerOn);
-}
-
-// ===== 出題方向 =====
-function getDirection() {
-  if (mode === "mix") return Math.random() < 0.5;
-  if (mode === "en") return true;
-  if (mode === "ja") return false;
-}
-
-function getList() {
-  return isReview && wrongWords.length > 0 ? wrongWords : words;
-}
-
-// ===== タイマー =====
-function startTimer() {
-  if (!timerOn) {
-    document.getElementById("timer").textContent = "";
-    return;
-  }
-
-  clearInterval(timerInterval);
-  timeLeft = 10;
-  document.getElementById("timer").textContent = "⏱ " + timeLeft;
-
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    document.getElementById("timer").textContent = "⏱ " + timeLeft;
-
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      autoWrong();
-    }
-  }, 1000);
-}
-
-function toggleTimer() {
-  timerOn = !timerOn;
-  saveData();
-  alert(timerOn ? "タイマーON" : "タイマーOFF");
-}
-
-// ===== 問題 =====
+let mode = "mix";
 let isEnglishToJapanese;
 
-function nextWord() {
+// 保存
+function save(){
+  localStorage.setItem("mastery", JSON.stringify(mastery));
+}
+
+// 出題リスト（ここが重要🔥）
+function getList(){
+  return words.filter(w => (mastery[w.en] || 0) < 20);
+}
+
+// 出題方向
+function getDir(){
+  if(mode==="mix") return Math.random()<0.5;
+  if(mode==="en") return true;
+  return false;
+}
+
+function nextWord(){
   const list = getList();
-  current = list[Math.floor(Math.random() * list.length)];
 
-  isEnglishToJapanese = getDirection();
-
-  document.getElementById("question").textContent =
-    isEnglishToJapanese ? current.en : current.ja;
-
-  document.getElementById("answer").value = "";
-  document.getElementById("result").textContent = "";
-
-  startTimer();
-}
-
-// ===== 判定 =====
-function checkAnswer() {
-  clearInterval(timerInterval);
-
-  const input = document.getElementById("answer").value.trim();
-  const correctAnswer = isEnglishToJapanese ? current.ja : current.en;
-
-  total++;
-
-  if (correctAnswer.includes(input) && input !== "") {
-    correctCount++;
-    document.getElementById("result").textContent =
-      "正解！ 正答: " + correctAnswer;
-    document.getElementById("result").className = "result correct";
-
-    wrongWords = wrongWords.filter(w => w.en !== current.en);
-
-  } else {
-    autoWrong();
-  }
-
-  updateStats();
-  saveData();
-}
-
-function autoWrong() {
-  const correctAnswer = isEnglishToJapanese ? current.ja : current.en;
-
-  document.getElementById("result").textContent =
-    "不正解… 正解: " + correctAnswer;
-  document.getElementById("result").className = "result wrong";
-
-  if (!wrongWords.some(w => w.en === current.en)) {
-    wrongWords.push(current);
-  }
-
-  mistakeCount[current.en] = (mistakeCount[current.en] || 0) + 1;
-
-  total++;
-}
-
-// ===== モード =====
-function reviewMode() {
-  if (wrongWords.length === 0) {
-    alert("ミスなし！");
+  if(list.length === 0){
+    question.textContent = "🎉 全部習得！";
     return;
   }
-  isReview = true;
-  document.getElementById("mode").textContent = "復習モード";
-  nextWord();
+
+  current = list[Math.floor(Math.random() * list.length)];
+  isEnglishToJapanese = getDir();
+
+  question.textContent = isEnglishToJapanese ? current.en : current.ja;
+
+  answer.value = "";
+  result.textContent = "";
+
+  updateBar();
 }
 
-function changeMode() {
-  mode = document.getElementById("modeSelect").value;
-  saveData();
+// 👇ゲージ更新
+function updateBar(){
+  let val = mastery[current.en] || 0;
+  let percent = (val / 20) * 100;
+
+  barFill.style.width = percent + "%";
+  masteryText.textContent = `習得度: ${val}/20`;
 }
 
-// ===== ステータス =====
-function updateStats() {
-  const rate = total ? Math.round((correctCount / total) * 100) : 0;
-  document.getElementById("stats").textContent =
-    `正答率: ${rate}% (${correctCount}/${total})`;
+function checkAnswer(){
+  const input = answer.value.trim();
+  const correct = isEnglishToJapanese ? current.ja : current.en;
 
-  const sorted = Object.entries(mistakeCount)
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,3);
+  if(correct.includes(input) && input !== ""){
+    result.textContent = "正解！ 正答: " + correct;
+    result.className = "result correct";
 
-  document.getElementById("weak").textContent =
-    "苦手: " + sorted.map(x=>`${x[0]}(${x[1]})`).join(", ");
+    mastery[current.en] = (mastery[current.en] || 0) + 1;
+
+  } else {
+    result.textContent = "不正解… 正解: " + correct;
+    result.className = "result wrong";
+  }
+
+  save();
+  updateBar();
 }
 
-// Enter対応
-document.getElementById("answer").addEventListener("keypress", e=>{
+function changeMode(){
+  mode = modeSelect.value;
+}
+
+function resetMastery(){
+  if(confirm("リセットする？")){
+    mastery = {};
+    save();
+    nextWord();
+  }
+}
+
+answer.addEventListener("keypress", e=>{
   if(e.key==="Enter") checkAnswer();
 });
 
-// 初期設定反映
-document.getElementById("modeSelect").value = mode;
-
-updateStats();
 nextWord();
 </script>
 
