@@ -361,6 +361,7 @@ let mode = "mix";
 let isEnglishToJapanese;
 let reviewOnly = false;
 let answered = false;
+let lastWordKey = "";
 
 if("scrollRestoration" in history){
   history.scrollRestoration = "manual";
@@ -371,13 +372,49 @@ function save(){
   localStorage.setItem("mastery", JSON.stringify(mastery));
 }
 
-// 出題リスト（ここが重要🔥）
+function getWordKey(word){
+  return `${word.en}::${word.ja}`;
+}
+
+function getMastery(word){
+  const key = getWordKey(word);
+  return mastery[key] ?? mastery[word.en] ?? 0;
+}
+
+function setMastery(word, value){
+  mastery[getWordKey(word)] = value;
+}
+
 function getList(){
-  const base = words.filter(w => (mastery[w.en] || 0) < 10);
+  const base = words.filter(w => getMastery(w) < 10);
   if(!reviewOnly) return base;
 
-  const reviewList = base.filter(w => (mastery[w.en] || 0) < 3);
+  const reviewList = base.filter(w => getMastery(w) < 3);
   return reviewList.length ? reviewList : base;
+}
+
+function pickWord(list){
+  const candidates = list.length > 1
+    ? list.filter(word => getWordKey(word) !== lastWordKey)
+    : list;
+
+  const weighted = candidates.map(word => {
+    const level = getMastery(word);
+    return {
+      word,
+      weight: Math.pow(11 - level, 2)
+    };
+  });
+
+  const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+  let hit = Math.random() * total;
+
+  for(const item of weighted){
+    hit -= item.weight;
+    if(hit <= 0) return item.word;
+  }
+
+  return weighted[weighted.length - 1].word;
 }
 
 // 出題方向
@@ -399,7 +436,8 @@ function nextWord(focusAnswer = false){
     return;
   }
 
-  current = list[Math.floor(Math.random() * list.length)];
+  current = pickWord(list);
+  lastWordKey = getWordKey(current);
   isEnglishToJapanese = getDir();
 
   question.textContent = isEnglishToJapanese ? current.en : current.ja;
@@ -416,7 +454,7 @@ function nextWord(focusAnswer = false){
 // 👇ゲージ更新
 function updateBar(){
   if(!current) return;
-  let val = mastery[current.en] || 0;
+  let val = getMastery(current);
   let percent = (val / 10) * 100;
 
   barFill.style.width = percent + "%";
@@ -429,18 +467,15 @@ function checkAnswer(){
   const input = answer.value.trim();
   const correct = isEnglishToJapanese ? current.ja : current.en;
   const normalizedInput = normalize(input);
-  const acceptedAnswers = isEnglishToJapanese
-    ? current.ja.split(/[、,]/).map(normalize).filter(Boolean)
-    : [normalize(current.en)];
   const isCorrect = isEnglishToJapanese
-    ? acceptedAnswers.some(item => item.includes(normalizedInput))
-    : acceptedAnswers.includes(normalizedInput);
+    ? isCloseJapaneseAnswer(input, current)
+    : normalizedInput === normalize(current.en);
 
   if(normalizedInput && isCorrect){
     result.textContent = "正解！ 正答: " + correct;
     result.className = "result correct";
 
-    mastery[current.en] = Math.min((mastery[current.en] || 0) + 1, 10);
+    setMastery(current, Math.min(getMastery(current) + 1, 10));
 
   } else {
     result.textContent = "不正解… 正解: " + correct;
@@ -475,14 +510,72 @@ function resetMastery(){
 }
 
 function updateStats(){
-  const learned = words.filter(w => (mastery[w.en] || 0) >= 10).length;
+  const learned = words.filter(w => getMastery(w) >= 10).length;
   const left = words.length - learned;
   const reviewText = reviewOnly ? " / 復習中" : "";
   stats.textContent = `残り ${left}語 / 習得 ${learned}語${reviewText}`;
 }
 
 function normalize(value){
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
+  return value.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function normalizeJapanese(value){
+  return normalize(value)
+    .replace(/[〜~…・、,。.!！?？（）()「」『』【】\[\]\s]/g, "")
+    .replace(/ください/g, "")
+    .replace(/[をにへがは]/g, "")
+    .trim();
+}
+
+function japaneseAnswerForms(value){
+  const base = normalizeJapanese(value);
+  if(!base) return [];
+
+  const forms = new Set([base]);
+  const endings = [
+    "すること", "する", "した", "している", "して",
+    "くこと", "ぐこと", "むこと", "ぶこと", "ること",
+    "なこと", "のこと", "こと", "な", "の"
+  ];
+
+  for(const ending of endings){
+    if(base.endsWith(ending) && base.length > ending.length){
+      forms.add(base.slice(0, -ending.length));
+    }
+  }
+
+  if(base.endsWith("い") && base.length > 1){
+    forms.add(base.slice(0, -1));
+  }
+
+  return [...forms].filter(form => form.length > 0);
+}
+
+function getJapaneseAnswers(word){
+  const pieces = word.ja
+    .split(/[、,]/)
+    .flatMap(part => [
+      part,
+      part.replace(/^.*?に/, ""),
+      part.replace(/^.*?を/, "")
+    ]);
+
+  return [...new Set(pieces.flatMap(japaneseAnswerForms))];
+}
+
+function isCloseJapaneseAnswer(input, word){
+  const inputForms = japaneseAnswerForms(input);
+  const answerForms = getJapaneseAnswers(word);
+
+  return inputForms.some(inputForm => {
+    if(inputForm.length < 2) return false;
+
+    return answerForms.some(answerForm => {
+      if(answerForm.length < 2) return false;
+      return answerForm.includes(inputForm) || inputForm.includes(answerForm);
+    });
+  });
 }
 
 answer.addEventListener("keydown", e=>{
